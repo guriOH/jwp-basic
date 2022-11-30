@@ -1,6 +1,7 @@
 package next.dao;
 
 import core.jdbc.ConnectionManager;
+import next.exception.DataAccessException;
 import next.model.User;
 
 import java.sql.Connection;
@@ -10,69 +11,46 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class JdbcTemplate {
+public class JdbcTemplate {
 
-    public void update(String sql) throws SQLException {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-        try {
-            con = ConnectionManager.getConnection();
-//            String sql = createQuery();
-            pstmt = con.prepareStatement(sql);
-            setValues(pstmt);
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
-
-            if (con != null) {
-                con.close();
-            }
+    public void update(String sql, PreparedStatementSetter pss) throws DataAccessException {
+        /*
+        *  자바 7 에서 제공하는 java.io.AutoClosable 인터페이스 활용
+        * AutoClosable를 구현해야함
+        *  try-with-resources 구문으로 자원을 자동 반납
+        * */
+        try (Connection conn = ConnectionManager.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pss.setValues(pstmt);
+            pstmt.executeUpdate(sql);
+        } catch (SQLException e){
+            throw new DataAccessException(e);
         }
-
     }
 
-    public Object queryForObject(String sql) throws SQLException{
-        List result = query(sql);
+    public Object queryForObject(String sql,PreparedStatementSetter pss, RowMapper rowMapper) throws SQLException{
+        List result = query(sql,pss,rowMapper);
         if(result.isEmpty()){
             return null;
         }
         return result.get(0);
     }
-    public List query(String sql) throws SQLException {
-        Connection con = null;
-        PreparedStatement pstmt = null;
+
+    public List query(String sql,PreparedStatementSetter pss, RowMapper rowMapper) throws SQLException {
         ResultSet rs = null;
-        try {
-            con = ConnectionManager.getConnection();
-            pstmt = con.prepareStatement(sql);
-            setValues(pstmt);
-
+        try (Connection conn = ConnectionManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pss.setValues(pstmt);
             rs = pstmt.executeQuery();
-
 
             List<Object> result = new ArrayList<Object>();
             while(rs.next()){
-                result.add(mapRow(rs));
+                result.add(rowMapper.mapRow(rs));
             }
             return result;
-        } finally {
-            if (rs != null) {
-                rs.close();
-            }
-            if (pstmt != null) {
-                pstmt.close();
-            }
-            if (con != null) {
-                con.close();
-            }
+        }catch (SQLException e){
+            throw new DataAccessException(e);
         }
     }
-
-//    abstract String createQuery();
-
-    abstract void setValues(PreparedStatement pstmt) throws SQLException;
-
-    abstract Object mapRow(ResultSet rs) throws SQLException;
 
 }
