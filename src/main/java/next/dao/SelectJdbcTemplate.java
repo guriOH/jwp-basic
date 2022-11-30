@@ -10,27 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class JdbcTemplate {
-
-    public void update(String sql) throws SQLException {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-        try {
-            con = ConnectionManager.getConnection();
-//            String sql = createQuery();
-            pstmt = con.prepareStatement(sql);
-            setValues(pstmt);
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
-
-            if (con != null) {
-                con.close();
-            }
-        }
-
-    }
+public abstract class SelectJdbcTemplate {
 
     public Object queryForObject(String sql) throws SQLException{
         List result = query(sql);
@@ -68,11 +48,7 @@ public abstract class JdbcTemplate {
             }
         }
     }
-
-//    abstract String createQuery();
-
     abstract void setValues(PreparedStatement pstmt) throws SQLException;
 
     abstract Object mapRow(ResultSet rs) throws SQLException;
-
 }
