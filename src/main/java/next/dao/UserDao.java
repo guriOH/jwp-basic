@@ -26,6 +26,12 @@ public class UserDao {
         };
         jdbcTemplate.update("INSERT INTO USERS VALUES (?, ?, ?, ?)", pss);
 
+        /*
+        * 가변인자를 활용한 insert
+        * */
+        jdbcTemplate.update("INSERT INTO USERS VALUES (?, ?, ?, ?)",
+                user.getUserId(), user.getPassword(), user.getName(), user.getEmail());
+
     }
 
     public void update(User user) throws SQLException {
@@ -42,6 +48,9 @@ public class UserDao {
         };
 
         jdbcTemplate.update("UPDATE USERS SET password=?, name=?, email=?  WHERE userid=?",pss);
+
+        jdbcTemplate.update("UPDATE USERS SET password=?, name=?, email=?  WHERE userid=?",
+                 user.getPassword(), user.getName(), user.getEmail(),user.getUserId());
     }
 
 
@@ -54,9 +63,9 @@ public class UserDao {
             }
         };
 
-        RowMapper rowMapper = new RowMapper(){
+        RowMapper<User> rowMapper = new RowMapper<User>(){
             @Override
-            public Object mapRow(ResultSet rs) throws SQLException {
+            public User mapRow(ResultSet rs) throws SQLException {
                 return new User(
                         rs.getString("userID"),
                         rs.getString("password"),
@@ -66,7 +75,12 @@ public class UserDao {
             }
         };
 
-        return (User) jdbcTemplate.queryForObject("SELECT userId, password, name, email FROM USERS WHERE userId = ?",pss,rowMapper);
+//        return jdbcTemplate.queryForObject("SELECT userId, password, name, email FROM USERS WHERE userId = ?",pss,rowMapper);
+
+
+        return jdbcTemplate.queryForObject("SELECT userId, password, name, email FROM USERS WHERE userId = ?",
+                pss,
+                rowMapper);
     }
 
     public List<User> findAll() throws SQLException {
@@ -78,9 +92,9 @@ public class UserDao {
             }
         };
 
-        RowMapper rowMapper = new RowMapper(){
+        RowMapper<User> rowMapper = new RowMapper<User>(){
             @Override
-            public Object mapRow(ResultSet rs) throws SQLException {
+            public User mapRow(ResultSet rs) throws SQLException {
                 return new User(
                         rs.getString("userID"),
                         rs.getString("password"),
@@ -90,6 +104,6 @@ public class UserDao {
             }
         };
 
-        return (List<User>)jdbcTemplate.query("SELECT userId, password, name, email FROM USERS",pss, rowMapper);
+        return jdbcTemplate.query("SELECT userId, password, name, email FROM USERS",pss, rowMapper);
     }
 }

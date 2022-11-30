@@ -13,6 +13,21 @@ import java.util.List;
 
 public class JdbcTemplate {
 
+    public void update(String sql, Object... paramters) throws DataAccessException {
+        /*
+         *  가변인자를 활용한 파라미터 전달
+         * */
+        try (Connection conn = ConnectionManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)){
+            for (int i = 0; i < paramters.length; i++){
+                pstmt.setObject(i+1,paramters[i]);
+            }
+            pstmt.executeUpdate(sql);
+        } catch (SQLException e){
+            throw new DataAccessException(e);
+        }
+    }
+
     public void update(String sql, PreparedStatementSetter pss) throws DataAccessException {
         /*
         *  자바 7 에서 제공하는 java.io.AutoClosable 인터페이스 활용
@@ -28,22 +43,22 @@ public class JdbcTemplate {
         }
     }
 
-    public Object queryForObject(String sql,PreparedStatementSetter pss, RowMapper rowMapper) throws SQLException{
-        List result = query(sql,pss,rowMapper);
+    public <T> T queryForObject(String sql,PreparedStatementSetter pss, RowMapper<T> rowMapper) throws SQLException{
+        List<T> result = query(sql,pss,rowMapper);
         if(result.isEmpty()){
             return null;
         }
         return result.get(0);
     }
 
-    public List query(String sql,PreparedStatementSetter pss, RowMapper rowMapper) throws SQLException {
+    public <T> List<T> query(String sql,PreparedStatementSetter pss, RowMapper<T> rowMapper) throws SQLException {
         ResultSet rs = null;
         try (Connection conn = ConnectionManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)){
             pss.setValues(pstmt);
             rs = pstmt.executeQuery();
 
-            List<Object> result = new ArrayList<Object>();
+            List<T> result = new ArrayList<T>();
             while(rs.next()){
                 result.add(rowMapper.mapRow(rs));
             }
